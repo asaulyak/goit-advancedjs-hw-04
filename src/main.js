@@ -26,24 +26,7 @@ function bindFormEvents() {
     }
 
     const searchQuery = searchQueryElement.value;
-
-    try {
-      const images = await searchImages(searchQuery, 1, IMAGES_PER_PAGE);
-
-      storeFormData({ query: searchQuery, page: 1, total: images.total });
-      renderCards(images.hits, true);
-
-      if (!images.total) {
-        showError(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-        return;
-      }
-
-      showInfo(`Hooray! We found ${images.total} images.`);
-    } catch (e) {
-      // showError('Sorry, unexpected error happened. Please try again.');
-    }
+    await loadImages(searchQuery, 1, true);
   });
 }
 
@@ -73,21 +56,55 @@ function bindScrollEvents() {
         document.documentElement;
 
       if (scrollTop + clientHeight >= scrollHeight && hasMoreImages()) {
-        showLoader();
-
         const { query, page } = getFormData();
-        const images = await searchImages(query, page + 1, IMAGES_PER_PAGE);
 
-        showLoader(false);
-
-        storeFormData({ query, page: page + 1, total: images.total });
-        renderCards(images.hits, false);
+        await loadImages(query, page + 1);
       }
     }, 400),
     {
       passive: true,
     }
   );
+}
+
+async function loadImages(query, page, replaceCards = false) {
+  if (!query?.trim()) {
+    clearGallery();
+    showError('Query should not be empty.')
+    return;
+  }
+
+  try {
+    showLoader();
+
+    const images = await searchImages(query, page, IMAGES_PER_PAGE);
+
+    storeFormData({ query, page, total: images.total });
+    renderCards(images.hits, replaceCards);
+
+    if (replaceCards) {
+      if (!images.total) {
+        showError(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      } else {
+        showInfo(`Hooray! We found ${images.total} images.`);
+      }
+    }
+
+    if (!hasMoreImages()) {
+      showError("We're sorry, but you've reached the end of search results.");
+    }
+  } catch (e) {
+    clearGallery();
+    showError('Sorry, error occurred. Please try again.');
+  } finally {
+    showLoader(false);
+  }
+}
+
+function clearGallery() {
+  renderCards([], true);
 }
 
 function hasMoreImages() {
