@@ -70,7 +70,7 @@ function bindScrollEvents() {
 async function loadImages(query, page, replaceCards = false) {
   if (!query?.trim()) {
     clearGallery();
-    showError('Query should not be empty.')
+    showError('Query should not be empty.');
     return;
   }
 
@@ -92,7 +92,7 @@ async function loadImages(query, page, replaceCards = false) {
       }
     }
 
-    if (!hasMoreImages()) {
+    if (!hasMoreImages() && images.total) {
       showError("We're sorry, but you've reached the end of search results.");
     }
   } catch (e) {
